@@ -207,13 +207,13 @@
 
     echo "<p id='socialtoasterContactShortSummary'>\n" .
          "<label for='socialtoaster_short_summary'>" . get_option('socialtoaster_name') . " Short Summary: </label>" . 
-         "<input name='socialtoaster_short_summary' id='socialtoaster_short_summary' type='text' value='" . stripslashes($postDetails['short_summary']) . "' maxlength='110' style='width: 98%'>" . 
+         "<input name='socialtoaster_short_summary' id='socialtoaster_short_summary' type='text' value='" . socialtoaster_escape($postDetails['short_summary']) . "' maxlength='110' style='width: 98%'>" . 
          __("<em>Write a short summary of the post. This is the text that will appear in your social media account pages.</em>") . 
          "</p>\n";
 
     echo "<p id='socialtoasterContactLabel'>\n" .
          "<label for='socialtoaster_label'>" . get_option('socialtoaster_name') . " Label: </label>" . 
-         "<input name='socialtoaster_label' id='socialtoaster_label' type='text' value='" . stripslashes($postDetails['label']) . "' maxlength='110' style='width: 98%'>" . 
+         "<input name='socialtoaster_label' id='socialtoaster_label' type='text' value='" . socialtoaster_escape($postDetails['label']) . "' maxlength='110' style='width: 98%'>" . 
          __("<em>Write a label for your post.  This is the text that will appear in your " . get_option('socialtoaster_name') . " reports.</em>") . 
          "</p>\n";
 
@@ -224,6 +224,12 @@
            "</p>\n";
     }
 
+  }
+
+  function socialtoaster_escape($text) {
+    $text = str_replace("'", "&apos;", $text);
+    $text = stripslashes($text);
+    return $text;
   }
 
   add_action( 'save_post', 'socialtoaster_save_post' );
@@ -412,7 +418,7 @@
     curl_setopt($curl_handle,CURLOPT_RETURNTRANSFER,1);
     $result = curl_exec($curl_handle);
     curl_close($curl_handle);
- 
+
     return $result;
   }
     
