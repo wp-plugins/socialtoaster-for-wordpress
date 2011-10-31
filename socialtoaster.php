@@ -46,7 +46,6 @@
     delete_option('socialtoaster_domain');    
     delete_option('socialtoaster_path_share');
     delete_option('socialtoaster_path_nonce');    
-    delete_option('socialtoaster_enable_lead_capture');    
     delete_option('socialtoaster_debug');
 
     $sql = 'DROP TABLE `' . 
@@ -65,55 +64,16 @@
 
     socialtoaster_generate_nonce();
 
-    $api_url = get_option('socialtoaster_domain'). "api-full/" . get_option('socialtoaster_key') . ".js?nonce=" . $nonce;
+    $api_url = get_option('socialtoaster_domain'). "api-full/" . get_option('socialtoaster_key') . ".js";
     print "<script type='text/javascript'>(function() { function async_load(){ var s = document.createElement('script'); s.type = 'text/javascript'; s.async = true; s.src = '" . $api_url . "'; var x = document.getElementsByTagName('script')[0]; x.parentNode.insertBefore(s, x); } if (window.attachEvent) window.attachEvent('onload', async_load); else window.addEventListener('load', async_load, false); })();</script>";
     wp_enqueue_script('socialtoaster_script', WP_PLUGIN_URL . '/socialtoaster/socialtoaster.js', array(), "1.0" );
   }
 
-  //Lead Capture - depends on formbuilder plugin
-  add_filter('the_content', 'socialtoaster_lead_capture', 30);
 
-  function socialtoaster_lead_capture($content = '') {
-    global $wpdb, $post;
-
-    $excerpt = strpos($post->post_content, "<!--more-->");
-    if(get_option('socialtoaster_enable_lead_capture') AND (is_single() OR is_page() OR !$excerpt)) $show = true;
-
-    if($show)
-    {
-      $post_id = $post->ID;
-
-      $post_id = $post->ID;
-      $sql = "SELECT form_id FROM " . FORMBUILDER_TABLE_PAGES . " WHERE post_id = '$post_id';";
-      $results = $wpdb->get_results($sql, ARRAY_A);
-      
-
-      if($results)
-      {
-        $page = $results[0];
-
-        $sql = "SELECT * FROM " . FORMBUILDER_TABLE_FORMS . " WHERE id='" . $page['form_id'] . "';";
-        $results = $wpdb->get_results($sql, ARRAY_A);
-        if($results) $form = $results[0];
-
-        $formID = "formBuilder" . clean_field_name($form['name']);
-
-        $output = "<script type='text/javascript'>";
-        $output .= 'var $j = jQuery.noConflict();' . "\n";
-        $output .= '$j(document).ready(function() { jQuery("#' . $formID . '").one("submit", function() { socialtoaster_submit_lead_form("' . $formID . '"); return false;}); });';
-        $output .= "</script>";
-      }
-    }
-
-
-
-    $content .= $output;
-    return $content;
-  }
-
-
-  //Post functions
-  add_action('publish_post', 'socialtoaster_post');
+   //check for Required Functions
+   if(required_functions()){
+    add_action('publish_post', 'socialtoaster_post');
+   }
 
   function socialtoaster_post($post_id) {
 
@@ -146,24 +106,25 @@
 
       $post_result = socialtoaster_curl_to_xml($url);
 
-      if($results)
-      {
-        //update row
-        $pageDetails = $results[0];
-        $pageDetails['posted'] = addslashes(1);
-        $pageDetails['post_id'] = addslashes($post_id);
-        $wpdb->update(SOCIALTOASTER_TABLE_POSTS, 
-          $pageDetails, 
-          array('id'=>$pageDetails['id'])
-        );
+      if ($post_result->code == 1) {
+        if($results)
+        {
+          //update row
+          $pageDetails = $results[0];
+          $pageDetails['posted'] = addslashes(1);
+          $pageDetails['post_id'] = addslashes($post_id);
+          $wpdb->update(SOCIALTOASTER_TABLE_POSTS, 
+            $pageDetails, 
+            array('id'=>$pageDetails['id'])
+          );
 
-      } else {
-        //insert row
-        $pageDetails['posted'] = addslashes(1);
-        $pageDetails['post_id'] = addslashes($post_id);
-        $wpdb->insert(SOCIALTOASTER_TABLE_POSTS, $pageDetails);
+        } else {
+          //insert row
+          $pageDetails['posted'] = addslashes(1);
+          $pageDetails['post_id'] = addslashes($post_id);
+          $wpdb->insert(SOCIALTOASTER_TABLE_POSTS, $pageDetails);
+        }
       }
-
       return $post_result->code;
 
     }
@@ -205,6 +166,9 @@
       }
     }
 
+    //check for cURL
+    if(required_functions()){
+
     echo "<p id='socialtoasterContactShortSummary'>\n" .
          "<label for='socialtoaster_short_summary'>" . get_option('socialtoaster_name') . " Short Summary: </label>" . 
          "<input name='socialtoaster_short_summary' id='socialtoaster_short_summary' type='text' value='" . socialtoaster_escape($postDetails['short_summary']) . "' maxlength='110' style='width: 98%'>" . 
@@ -223,6 +187,21 @@
            "<label for='socialtoaster_approve'>I would like to post this blog to SocialToaster.</label>" . 
            "</p>\n";
     }
+
+   }else{
+        echo '<p>To share links with Social Toaster, please ask your hosting provider to enable: <br /><ul style="padding-left: 10px;">';   
+
+        if(!function_exists('json_decode')){
+         echo '<li>json_decode</li>';  
+        }
+        if(!function_exists('simplexml_load_string')){
+         echo '<li>simplexml_load_string</li>';
+        }
+        if(!function_exists('curl_init')){
+         echo '<li style="color: red">cURL</li>';
+        }
+      echo '</ul>';
+   }
 
   }
 
@@ -288,7 +267,6 @@
       update_option('socialtoaster_secret',$_POST['socialtoaster_secret']);
       update_option('socialtoaster_domain',$_POST['socialtoaster_domain']);
       update_option('socialtoaster_debug',$_POST['socialtoaster_debug']);
-      update_option('socialtoaster_enable_lead_capture',$_POST['socialtoaster_enable_lead_capture']);
 
       echo "<div id='message' class='updated fade'>
               <p>Your SocialToaster settings have been saved.</p>
@@ -297,7 +275,12 @@
 
     echo "<form action='' method='post'>
           <div class='wrap'><div class=icon32 id=icon-options-general><br /></div>
-          <h2>SocialToaster Integration Settings</h2>
+          <a name='socialtoaster_integration'></a>
+          <h2>SocialToaster Integration Settings</h2>";
+    if(get_option('socialtoaster_key') == '' && get_option('socialtoaster_secret') == '') {
+      echo "<p>If you already have a SocialToaster account, enter your information in the form below<p>";
+    }
+    echo "</div>
           <table class='form-table'>
 
             <tr valign='top'>
@@ -355,17 +338,6 @@
               </td>
             </tr>
 
-            <tr valign='top'>
-              <th scope='row'>Enable Lead Capturing:</th>
-              <td>
-                <input type='checkbox' value='1' name='socialtoaster_enable_lead_capture' " . ( stripslashes(get_option('socialtoaster_enable_lead_capture')) == 1 ? "checked='checked'" : "" ) . "><br />
-                <small>
-                  <em>
-                    This requires the formbuilder module.
-                  </em>
-                </small>
-              </td>
-            </tr>
 
             <tr valign='top'>
               <th scope='row'>SocialToaster Debug mode:</th>
@@ -395,16 +367,23 @@
    * Function that takes in a url, pulls json information from that url,
    * parses the json information, and returns an associative array
    */
+
   function socialtoaster_curl_to_json($url) {
-    return socialtoaster_parse_json(socialtoaster_curl($url));
-  }
+   //check cURL
+   if(required_functions()){
+      return socialtoaster_parse_json(socialtoaster_curl($url));
+   }
+ } 
 
   /**
    * Function that takes in a url, pulls xml information from that url,
    * parses the xml information, and returns an associative array
    */
   function socialtoaster_curl_to_xml($url) {
-    return simplexml_load_string(socialtoaster_curl($url));
+    //check cURL
+    if(required_functions()){
+      return simplexml_load_string(socialtoaster_curl($url));
+    }
   }
 
   /**
@@ -466,3 +445,18 @@
   function socialtoaster_widget_ambassador_signup() {
     print '<div id="st-inline-small"></div>';
   }
+
+
+function required_functions(){
+  if(!function_exists('json_decode')){
+   return FALSE;
+  }
+  if(!function_exists('simplexml_load_string')){
+   return FALSE;
+  }
+  if(!function_exists('curl_init')){
+  return FALSE;
+  }
+return TRUE;
+}
+

@@ -36,26 +36,21 @@ SocialToaster for Wordpress Allows site administrators to maintain and administe
 2.  Activate the plugin throught the 'Plugins' menu in wordpress
       wp-admin/plugins.php
 
-3.  If you would like to integrate with the FormBuilder plugin to capture leads
-    through online forms, make sure that plugin is activated.
-
-4.  You'll now find a SocialToaster link in the Settings menu
+3.  You'll now find a SocialToaster link in the Settings menu
       wp-admin/options-general.php?page=socialtoaster_wordpress_integration_settings
 
-5.  Click the link below to sign up for an account and receive your keys if you do not
+4.  Click the link below to sign up for an account and receive your keys if you do not
     already have them.
        http://www.socialtoaster.com/get-socialtoaster-now?platform=wordpress
 
-6.  Enter your SocialToaster keys.  Also, check the "Enable Lead Capturing" checkbox
-    if the FormBuilder plugin is activated.  The rest of the advanced settings should stay
-    the same.
+5.  Enter your SocialToaster keys.  The rest of the advanced settings should stay the same.
 
-7.  Go to the widget page
+6.  Go to the widget page
       wp-admin/widgets.php
       
-8.  Add the SocialToaster Ambassador Signup widget to an appropriate sidebar.
+7.  Add the SocialToaster Ambassador Signup widget to an appropriate sidebar.
 
-9.  That's it!  Ambassadors will be able to sign up and manage their sharing settings 
+8.  That's it!  Ambassadors will be able to sign up and manage their sharing settings 
     using the "SocialToaster Ambassador Signup" widget.  Any time you add a new blog post
     to your site, your ambassadors will get an email notification with instructions on how
     to approve or deny the new content.
